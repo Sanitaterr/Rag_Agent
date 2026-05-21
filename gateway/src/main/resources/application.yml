@@ -1,0 +1,58 @@
+server:
+  port: 8081
+
+spring:
+  application:
+    name: gateway
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://localhost:3306/rag?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&useSSL=false&allowPublicKeyRetrieval=true
+    username: root
+    password: 53892510aA.
+
+mybatis-plus:
+  mapper-locations: classpath*:/mapper/**/*.xml
+  configuration:
+    map-underscore-to-camel-case: true
+  global-config:
+    banner: false
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+
+gateway:
+  mqtt:
+    enabled: true
+    inbound:
+      url: tcp://localhost:1883
+      client-id: rag-gateway-inbound
+      username:
+      password:
+      topics:
+        - factory/source/+/telemetry
+      qos:
+        - 1
+      connection-timeout-seconds: 10
+      keep-alive-seconds: 30
+      automatic-reconnect: true
+      clean-session: true
+    outbound:
+      url: tcp://localhost:1883
+      client-id: rag-gateway-outbound
+      username:
+      password:
+      default-topic: factory/rag/unknown-device/telemetry
+      qos:
+        - 1
+      retained: false
+      async: true
+      connection-timeout-seconds: 10
+      keep-alive-seconds: 30
+      automatic-reconnect: true
+      clean-session: true
+  processing:
+    source-protocol: MQTT
+    output-topic-template: factory/rag/{deviceId}/telemetry

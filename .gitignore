@@ -1,3 +1,7 @@
 __pycache__/
 *.py[cod]
+*.log
 .idea/
+.env
+*.env
+backend/.env
