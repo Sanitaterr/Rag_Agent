@@ -5,8 +5,10 @@ from typing import Any
 from langchain_core.messages import AIMessage, BaseMessage, HumanMessage, RemoveMessage
 from langchain_core.runnables import RunnableConfig
 from langgraph.graph.message import REMOVE_ALL_MESSAGES
+from sqlalchemy import text
 
 from agent.runtime import message_utils
+from db.database import AsyncSessionLocal
 
 
 class ConversationMemory:
@@ -75,3 +77,32 @@ class ConversationMemory:
                 break
 
         return sessions
+
+    async def delete_session(self, thread_id: str) -> dict[str, int]:
+        """Delete all LangGraph checkpoint rows that belong to one conversation thread."""
+        if not thread_id:
+            return {"checkpoint_writes": 0, "checkpoints": 0, "checkpoint_blobs": 0}
+
+        async with AsyncSessionLocal() as session:
+            async with session.begin():
+                # LangGraph MySQL persistence stores one logical conversation across
+                # checkpoints, intermediate writes, and channel blobs. The sidebar
+                # session ID is the checkpointer thread_id, so it is the deletion key.
+                write_result = await session.execute(
+                    text("DELETE FROM checkpoint_writes WHERE thread_id = :thread_id"),
+                    {"thread_id": thread_id},
+                )
+                checkpoint_result = await session.execute(
+                    text("DELETE FROM checkpoints WHERE thread_id = :thread_id"),
+                    {"thread_id": thread_id},
+                )
+                blob_result = await session.execute(
+                    text("DELETE FROM checkpoint_blobs WHERE thread_id = :thread_id"),
+                    {"thread_id": thread_id},
+                )
+
+        return {
+            "checkpoint_writes": write_result.rowcount or 0,
+            "checkpoints": checkpoint_result.rowcount or 0,
+            "checkpoint_blobs": blob_result.rowcount or 0,
+        }

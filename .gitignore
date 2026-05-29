@@ -5,3 +5,8 @@ __pycache__/
 .env
 *.env
 backend/.env
+backend/.langgraph_api/
+backend/storage/.chroma/
+backend/storage/.chroma_manifest.json
+backend/storage/.extracted/
+backend/storage/~$*.docx

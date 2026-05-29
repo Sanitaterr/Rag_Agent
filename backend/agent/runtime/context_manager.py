@@ -26,6 +26,7 @@ class ConversationContextManager:
 
     def recent_messages(self, messages: list[BaseMessage]) -> list[BaseMessage]:
         """Keep recent messages without breaking AI tool-call and ToolMessage pairs."""
+        messages = self._drop_empty_assistant_messages(messages)
         max_messages = max(1, self._settings.llm_context_messages)
         summary_message = next(
             (
@@ -91,3 +92,16 @@ class ConversationContextManager:
         if index >= 0 and isinstance(messages[index], AIMessage) and messages[index].tool_calls:
             return index
         return tool_index
+
+    @staticmethod
+    def _drop_empty_assistant_messages(messages: list[BaseMessage]) -> list[BaseMessage]:
+        """Remove historical blank assistant turns before sending context to an LLM."""
+        return [
+            message
+            for message in messages
+            if not (
+                isinstance(message, AIMessage)
+                and not message.tool_calls
+                and not message_utils.chunk_text(message).strip()
+            )
+        ]

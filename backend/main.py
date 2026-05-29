@@ -11,10 +11,13 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from agent.runtime.agent_graph import chat_agent
+from api.access_points import router as access_points_router
 from api.agent import router as agent_router
+from api.knowledge import router as knowledge_router
 from api.telemetry import router as telemetry_router
 from config.settings import settings
 from db.database import close_engine
+from services.graphrag import graph_rag
 from services.mqtt_subscriber import telemetry_subscriber
 
 
@@ -27,6 +30,7 @@ async def lifespan(app: FastAPI):
         yield
     finally:
         telemetry_subscriber.stop()
+        graph_rag.close()
         await chat_agent.close()
         await close_engine()
 
@@ -42,7 +46,9 @@ app.add_middleware(
 )
 
 app.include_router(telemetry_router, prefix="/api")
+app.include_router(access_points_router, prefix="/api")
 app.include_router(agent_router, prefix="/api")
+app.include_router(knowledge_router, prefix="/api")
 
 
 @app.get("/")

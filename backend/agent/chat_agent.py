@@ -5,6 +5,7 @@ from langchain_core.runnables import RunnableConfig
 from langchain_core.tools import BaseTool
 
 from agent.prompts import CONVERSATION_SUMMARY_PROMPT, FINAL_ANSWER_SYSTEM_PROMPT, TOOL_AGENT_SYSTEM_PROMPT
+from agent.runtime import message_utils
 from agent.runtime.dsml_tool_calls import normalize_text_tool_calls
 from agent.tools.registry import tools
 
@@ -23,14 +24,17 @@ class ChatAgent:
         config: RunnableConfig | None = None,
     ) -> BaseMessage:
         """Let the model either call tools or produce the final answer."""
-        prompt_messages = [SystemMessage(content=TOOL_AGENT_SYSTEM_PROMPT.format(route="all")), *messages]
+        prompt_messages = [
+            SystemMessage(content=TOOL_AGENT_SYSTEM_PROMPT.format(route="all")),
+            *message_utils.text_only_messages(messages),
+        ]
         response = await self._bound_llm("all", tools).ainvoke(prompt_messages, config=config, stream=False)
         return normalize_text_tool_calls(response, tools)
 
     async def summarize(self, messages: list[BaseMessage], config: RunnableConfig | None = None) -> BaseMessage:
         """Compress old conversation history into a durable summary."""
         return await self._llm.ainvoke(
-            [SystemMessage(content=CONVERSATION_SUMMARY_PROMPT), *messages],
+            [SystemMessage(content=CONVERSATION_SUMMARY_PROMPT), *message_utils.text_only_messages(messages)],
             config=config,
         )
 
@@ -41,7 +45,7 @@ class ChatAgent:
     ) -> BaseMessage:
         """Streamable final answer pass without tools bound."""
         return await self._llm.ainvoke(
-            [SystemMessage(content=FINAL_ANSWER_SYSTEM_PROMPT), *messages],
+            [SystemMessage(content=FINAL_ANSWER_SYSTEM_PROMPT), *message_utils.text_only_messages(messages)],
             config=config,
         )
 

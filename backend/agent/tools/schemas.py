@@ -7,6 +7,13 @@ class WebSearchInput(BaseModel):
     query: str = Field(min_length=1, description="Search query to send to Tavily.")
 
 
+class KnowledgeSearchInput(BaseModel):
+    """Input schema for local docx knowledge-base search."""
+
+    query: str = Field(min_length=1, description="Question or keywords to search in uploaded DOCX text, tables, image OCR, and image descriptions.")
+    top_k: int = Field(default=5, ge=1, le=10, description="Maximum document chunks to return.")
+
+
 class WeatherInput(BaseModel):
     """Input schema for the weather tool."""
 

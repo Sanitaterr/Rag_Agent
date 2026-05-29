@@ -1,4 +1,5 @@
 from agent.tools.registry import tools
+from agent.tools.knowledge import search_docs
 from agent.tools.telemetry import get_latest_telemetry, list_telemetry_devices, summarize_telemetry
 from agent.tools.utility import calculate, get_current_time
 from agent.tools.weather import get_weather
@@ -11,6 +12,7 @@ __all__ = [
     "get_latest_telemetry",
     "get_weather",
     "list_telemetry_devices",
+    "search_docs",
     "summarize_telemetry",
     "tools",
     "web_search",

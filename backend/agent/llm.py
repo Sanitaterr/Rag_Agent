@@ -77,7 +77,7 @@ class DeepSeekChatOpenAI(ChatOpenAI):
 
 
 def create_deepseek_llm(settings: Settings):
-    """Create the general chat model with thinking disabled for persisted history."""
+    """Create the final-answer model with token streaming enabled."""
     primary = _create_deepseek_model(settings, settings.deepseek_model, streaming=True, disable_thinking=True)
     fallback = _optional_fallback(settings, settings.deepseek_fallback_model, streaming=True, disable_thinking=True)
     return _with_timeout_fallback(primary, fallback)

@@ -1,0 +1,24 @@
+{"question": "P203-A001 是什么意思？应该怎么处理？", "expected_refs": ["P203-A001", "IMG-DOC-P203-SUCP", "DOC-P203"]}
+{"question": "P203A/B 高压给水离心泵 出现 泵体振动高，可能原因有哪些？", "expected_refs": ["P203-A004", "P203_VIB", "DOC-P203"]}
+{"question": "查询 高压给水泵系统 的高高等级报警，并返回对应恢复条件", "expected_refs": ["DOC-P203"]}
+{"question": "K401-A001 是什么意思？应该怎么处理？", "expected_refs": ["K401-A001", "IMG-DOC-K401-PRESS", "DOC-K401"]}
+{"question": "K401A/B 螺杆空气压缩机 出现 机体振动高，可能原因有哪些？", "expected_refs": ["K401-A004", "K401_VIB", "DOC-K401"]}
+{"question": "查询 仪表空气压缩系统 的高高等级报警，并返回对应恢复条件", "expected_refs": ["DOC-K401"]}
+{"question": "R101-A001 是什么意思？应该怎么处理？", "expected_refs": ["R101-A001", "IMG-DOC-R101-JACKET", "DOC-R101"]}
+{"question": "R101 夹套反应釜 出现 冷却水流量低，可能原因有哪些？", "expected_refs": ["R101-A004", "R101_CWF", "DOC-R101"]}
+{"question": "查询 间歇反应温度控制系统 的高高等级报警，并返回对应恢复条件", "expected_refs": ["DOC-R101"]}
+{"question": "CV302-A001 是什么意思？应该怎么处理？", "expected_refs": ["CV302-A001", "SPD", "DOC-CV302"]}
+{"question": "CV302 变频皮带输送机 出现 电机轴承温度高，可能原因有哪些？", "expected_refs": ["CV302-A004", "CV302_MBT", "DOC-CV302"]}
+{"question": "查询 包装输送系统 的高高等级报警，并返回对应恢复条件", "expected_refs": ["DOC-CV302"]}
+{"question": "CW501-A001 是什么意思？应该怎么处理？", "expected_refs": ["CW501-A001", "SP", "DOC-CW501"]}
+{"question": "CW501A/B 冷却水泵与 CT501 冷却塔 出现 冷却水泵振动高，可能原因有哪些？", "expected_refs": ["CW501-A004", "CW501_VIB", "DOC-CW501"]}
+{"question": "查询 循环冷却水系统 的高高等级报警，并返回对应恢复条件", "expected_refs": ["DOC-CW501"]}
+{"question": "HLB21-A001 是什么意思？应该怎么处理？", "expected_refs": ["HLB21-A001", "RMS", "DOC-HLB21"]}
+{"question": "HLB21AN001CE 振动监测点 出现 包络谱内圈特征频率异常，可能原因有哪些？", "expected_refs": ["HLB21-A004", "HLB21_ENV_BPFI", "DOC-HLB21"]}
+{"question": "查询 旋转设备状态监测系统 的高高等级报警，并返回对应恢复条件", "expected_refs": ["DOC-HLB21"]}
+{"question": "B701-A001 是什么意思？应该怎么处理？", "expected_refs": ["B701-A001", "LVH", "DOC-B701"]}
+{"question": "B701 水管锅炉 出现 火焰丧失，可能原因有哪些？", "expected_refs": ["B701-A004", "B701_FLAME", "DOC-B701"]}
+{"question": "查询 蒸汽锅炉系统 的高高等级报警，并返回对应恢复条件", "expected_refs": ["DOC-B701"]}
+{"question": "TK110-A001 是什么意思？应该怎么处理？", "expected_refs": ["TK110-A001", "HH", "DOC-TK110"]}
+{"question": "TK110 配料罐 出现 出料泵干运转，可能原因有哪些？", "expected_refs": ["TK110-A004", "TK110_PUMP", "DOC-TK110"]}
+{"question": "查询 配料与储罐系统 的高高等级报警，并返回对应恢复条件", "expected_refs": ["DOC-TK110"]}

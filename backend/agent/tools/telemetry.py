@@ -17,7 +17,7 @@ async def get_latest_telemetry(
     point_code: str | None = None,
     limit: int = 10,
 ) -> str:
-    """Query latest telemetry records from gateway_telemetry_record."""
+    """Query the latest telemetry snapshot, deduplicated by device and point."""
     safe_limit = max(1, min(limit, 50))
     filters = []
     params: dict[str, Any] = {"limit": safe_limit}
@@ -31,10 +31,41 @@ async def get_latest_telemetry(
     where_clause = f"WHERE {' AND '.join(filters)}" if filters else ""
     query = text(
         f"""
-        SELECT device_id, point_code, point_value, unit, quality, sampled_at, collected_at, source_topic, target_topic
-        FROM gateway_telemetry_record
-        {where_clause}
-        ORDER BY collected_at DESC
+        WITH ranked_points AS (
+            SELECT
+                id,
+                device_id,
+                point_code,
+                point_value,
+                unit,
+                quality,
+                source_protocol,
+                sampled_at,
+                collected_at,
+                source_topic,
+                target_topic,
+                ROW_NUMBER() OVER (
+                    PARTITION BY device_id, point_code
+                    ORDER BY collected_at DESC, id DESC
+                ) AS rn
+            FROM gateway_telemetry_record
+            {where_clause}
+        )
+        SELECT
+            id,
+            device_id,
+            point_code,
+            point_value,
+            unit,
+            quality,
+            source_protocol,
+            sampled_at,
+            collected_at,
+            source_topic,
+            target_topic
+        FROM ranked_points
+        WHERE rn = 1
+        ORDER BY collected_at DESC, device_id, point_code
         LIMIT :limit
         """
     )
@@ -45,7 +76,19 @@ async def get_latest_telemetry(
     except Exception as exc:
         return f"Telemetry query unavailable: {exc}"
 
-    return _json_dumps({"records": [_mapping_to_dict(row) for row in rows]})
+    records = [_mapping_to_dict(row) for row in rows]
+    payload: dict[str, Any] = {
+        "mode": "latest_per_device_point",
+        "record_count": len(records),
+        "records": records,
+    }
+    if device_id and not point_code:
+        get_device, _ = _access_point_services()
+        detail = await get_device(device_id)
+        if detail is not None:
+            payload["device"] = _json_safe_model(detail.device)
+            payload["online_threshold_seconds"] = detail.online_threshold_seconds
+    return _json_dumps(payload)
 
 
 @tool(args_schema=TelemetrySummaryInput)
@@ -97,25 +140,29 @@ async def summarize_telemetry(
 
 @tool(args_schema=TelemetryDevicesInput)
 async def list_telemetry_devices(limit: int = 20) -> str:
-    """List devices and their latest telemetry collection time."""
+    """List devices with status and their latest point values."""
     safe_limit = max(1, min(limit, 100))
-    query = text(
-        """
-        SELECT device_id, COUNT(*) AS record_count, MAX(collected_at) AS latest_collected_at
-        FROM gateway_telemetry_record
-        GROUP BY device_id
-        ORDER BY latest_collected_at DESC
-        LIMIT :limit
-        """
-    )
 
     try:
-        async with _async_session_local()() as session:
-            rows = (await session.execute(query, {"limit": safe_limit})).mappings().all()
+        _, list_devices = _access_point_services()
+        device_list = await list_devices()
     except Exception as exc:
         return f"Telemetry device list unavailable: {exc}"
 
-    return _json_dumps({"devices": [_mapping_to_dict(row) for row in rows]})
+    devices = sorted(
+        (_json_safe_model(device) for device in device_list.devices),
+        key=lambda item: str(item.get("last_seen_at") or ""),
+        reverse=True,
+    )[:safe_limit]
+    return _json_dumps(
+        {
+            "mode": "latest_device_status_with_points",
+            "generated_at": _json_safe(device_list.generated_at),
+            "online_threshold_seconds": device_list.online_threshold_seconds,
+            "stats": _json_safe_model(device_list.stats),
+            "devices": devices,
+        }
+    )
 
 
 def _async_session_local():
@@ -125,6 +172,15 @@ def _async_session_local():
     except ModuleNotFoundError as exc:
         raise RuntimeError(f"missing database dependency: {exc.name}") from exc
     return AsyncSessionLocal
+
+
+def _access_point_services():
+    """Lazy import access-point services for the same Studio-friendly reason."""
+    try:
+        from services.access_points import get_device, list_devices
+    except ModuleNotFoundError as exc:
+        raise RuntimeError(f"missing access-point dependency: {exc.name}") from exc
+    return get_device, list_devices
 
 
 def _parse_datetime(value: str) -> datetime:
@@ -142,6 +198,13 @@ def _json_safe(value: Any) -> Any:
     if isinstance(value, datetime):
         return value.isoformat()
     return value
+
+
+def _json_safe_model(value: Any) -> dict[str, Any]:
+    """Convert Pydantic models to JSON-safe dictionaries."""
+    if hasattr(value, "model_dump"):
+        return value.model_dump(mode="json")
+    return _mapping_to_dict(value)
 
 
 def _json_dumps(data: dict[str, Any]) -> str:

@@ -26,6 +26,15 @@ def _env_float(name: str, default: float) -> float:
     return float(raw_value) if raw_value else default
 
 
+def _env_bool(name: str, default: bool) -> bool:
+    raw_value = _env_value(name, str(default)).strip().lower()
+    if raw_value in {"1", "true", "yes", "on"}:
+        return True
+    if raw_value in {"0", "false", "no", "off"}:
+        return False
+    return default
+
+
 def _env_list(name: str, default: list[str]) -> list[str]:
     raw_value = _env_value(name, "")
     if not raw_value:
@@ -72,6 +81,54 @@ class Settings(BaseModel):
     tavily_search_url: str = Field(default_factory=lambda: _env_value("TAVILY_SEARCH_URL", "https://api.tavily.com/search"))
     tavily_search_depth: str = Field(default_factory=lambda: _env_value("TAVILY_SEARCH_DEPTH", "basic"))
     tavily_max_results: int = Field(default_factory=lambda: _env_int("TAVILY_MAX_RESULTS", 5))
+    embedding_api_key: str = Field(default_factory=lambda: _env_value("EMBEDDING_API_KEY", _env_value("DASHSCOPE_API_KEY", "")))
+    embedding_base_url: str = Field(
+        default_factory=lambda: _env_value("EMBEDDING_BASE_URL", "https://dashscope.aliyuncs.com/compatible-mode/v1")
+    )
+    embedding_model: str = Field(default_factory=lambda: _env_value("EMBEDDING_MODEL", "text-embedding-v4"))
+    embedding_dimensions: int = Field(default_factory=lambda: _env_int("EMBEDDING_DIMENSIONS", 1024))
+    embedding_batch_size: int = Field(default_factory=lambda: _env_int("EMBEDDING_BATCH_SIZE", 10))
+    chroma_persist_dir: str = Field(default_factory=lambda: _env_value("CHROMA_PERSIST_DIR", str(BASE_DIR / "storage" / ".chroma")))
+    rag_chunk_size: int = Field(default_factory=lambda: _env_int("RAG_CHUNK_SIZE", 800))
+    rag_chunk_overlap: int = Field(default_factory=lambda: _env_int("RAG_CHUNK_OVERLAP", 120))
+    rag_vector_candidates: int = Field(default_factory=lambda: _env_int("RAG_VECTOR_CANDIDATES", 12))
+    rag_keyword_candidates: int = Field(default_factory=lambda: _env_int("RAG_KEYWORD_CANDIDATES", 12))
+    rag_rerank_candidates: int = Field(default_factory=lambda: _env_int("RAG_RERANK_CANDIDATES", 20))
+    rag_query_expansion_enabled: bool = Field(default_factory=lambda: _env_bool("RAG_QUERY_EXPANSION_ENABLED", True))
+    rag_query_expansion_timeout_seconds: float = Field(default_factory=lambda: _env_float("RAG_QUERY_EXPANSION_TIMEOUT_SECONDS", 12.0))
+    rag_expansion_vector_weight: float = Field(default_factory=lambda: _env_float("RAG_EXPANSION_VECTOR_WEIGHT", 0.92))
+    rag_hyde_vector_weight: float = Field(default_factory=lambda: _env_float("RAG_HYDE_VECTOR_WEIGHT", 0.86))
+    rerank_enabled: bool = Field(default_factory=lambda: _env_bool("RERANK_ENABLED", True))
+    rerank_api_key: str = Field(default_factory=lambda: _env_value("RERANK_API_KEY", _env_value("DASHSCOPE_API_KEY", "")))
+    rerank_url: str = Field(
+        default_factory=lambda: _env_value(
+            "RERANK_URL",
+            "https://dashscope.aliyuncs.com/api/v1/services/rerank/text-rerank/text-rerank",
+        )
+    )
+    rerank_model: str = Field(default_factory=lambda: _env_value("RERANK_MODEL", "qwen3-vl-rerank"))
+    rerank_timeout_seconds: float = Field(default_factory=lambda: _env_float("RERANK_TIMEOUT_SECONDS", 20.0))
+    ocr_enabled: bool = Field(default_factory=lambda: _env_bool("OCR_ENABLED", True))
+    ocr_lang: str = Field(default_factory=lambda: _env_value("OCR_LANG", "ch"))
+    ocr_detection_model: str = Field(default_factory=lambda: _env_value("OCR_DETECTION_MODEL", "PP-OCRv5_mobile_det"))
+    ocr_recognition_model: str = Field(default_factory=lambda: _env_value("OCR_RECOGNITION_MODEL", "PP-OCRv5_mobile_rec"))
+    vision_enabled: bool = Field(default_factory=lambda: _env_bool("VISION_ENABLED", True))
+    vision_api_key: str = Field(default_factory=lambda: _env_value("VISION_API_KEY", _env_value("DASHSCOPE_API_KEY", "")))
+    vision_base_url: str = Field(
+        default_factory=lambda: _env_value("VISION_BASE_URL", "https://dashscope.aliyuncs.com/compatible-mode/v1")
+    )
+    vision_model: str = Field(default_factory=lambda: _env_value("VISION_MODEL", "qwen-vl-plus"))
+    vision_timeout_seconds: float = Field(default_factory=lambda: _env_float("VISION_TIMEOUT_SECONDS", 45.0))
+    vision_min_image_bytes: int = Field(default_factory=lambda: _env_int("VISION_MIN_IMAGE_BYTES", 0))
+    rag_visual_workers: int = Field(default_factory=lambda: _env_int("RAG_VISUAL_WORKERS", 4))
+    graph_rag_enabled: bool = Field(default_factory=lambda: _env_bool("GRAPH_RAG_ENABLED", True))
+    graph_rag_corpus_dir: str = Field(
+        default_factory=lambda: _env_value("GRAPH_RAG_CORPUS_DIR", str(BASE_DIR.parent / "industrial_graphrag_corpus"))
+    )
+    neo4j_uri: str = Field(default_factory=lambda: _env_value("NEO4J_URI", "bolt://localhost:7687"))
+    neo4j_user: str = Field(default_factory=lambda: _env_value("NEO4J_USER", "neo4j"))
+    neo4j_password: str = Field(default_factory=lambda: _env_value("NEO4J_PASSWORD", ""))
+    neo4j_database: str = Field(default_factory=lambda: _env_value("NEO4J_DATABASE", "neo4j"))
 
     @property
     def mysql_async_url(self) -> str:

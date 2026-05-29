@@ -1,13 +1,28 @@
-export async function fetchAgentSessions() {
-  const response = await fetch(apiUrl('/agent/sessions'))
+export async function fetchAgentSessions(options = {}) {
+  const response = await fetch(apiUrl('/agent/sessions'), {
+    signal: options.signal,
+  })
   if (!response.ok) {
     throw new Error((await response.text()) || `Request failed: ${response.status}`)
   }
   return response.json()
 }
 
-export async function fetchAgentSessionMessages(sessionId) {
-  const response = await fetch(apiUrl(`/agent/sessions/${encodeURIComponent(sessionId)}/messages`))
+export async function fetchAgentSessionMessages(sessionId, options = {}) {
+  const response = await fetch(apiUrl(`/agent/sessions/${encodeURIComponent(sessionId)}/messages`), {
+    signal: options.signal,
+  })
+  if (!response.ok) {
+    throw new Error((await response.text()) || `Request failed: ${response.status}`)
+  }
+  return response.json()
+}
+
+export async function deleteAgentSession(sessionId, options = {}) {
+  const response = await fetch(apiUrl(`/agent/sessions/${encodeURIComponent(sessionId)}`), {
+    method: 'DELETE',
+    signal: options.signal,
+  })
   if (!response.ok) {
     throw new Error((await response.text()) || `Request failed: ${response.status}`)
   }
@@ -21,8 +36,10 @@ export async function streamAgentMessage({
   onThought,
   onTool,
   onToken,
+  onAnswer,
   onDone,
   onError,
+  signal,
 }) {
   const response = await fetch(apiUrl('/agent/chat/stream'), {
     method: 'POST',
@@ -34,6 +51,7 @@ export async function streamAgentMessage({
       message,
       session_id: sessionId || null,
     }),
+    signal,
   })
 
   if (!response.ok || !response.body) {
@@ -45,9 +63,10 @@ export async function streamAgentMessage({
     thought: onThought,
     tool: onTool,
     token: onToken,
+    answer: onAnswer,
     done: onDone,
     error: onError,
-  })
+  }, signal)
 }
 
 function apiUrl(path) {
@@ -55,26 +74,38 @@ function apiUrl(path) {
   return `${baseUrl.replace(/\/$/, '')}${path}`
 }
 
-async function readSseStream(body, handlers) {
+async function readSseStream(body, handlers, signal) {
   const reader = body.getReader()
   const decoder = new TextDecoder('utf-8')
   let buffer = ''
+  const abortReader = () => reader.cancel().catch(() => {})
 
-  while (true) {
-    const { done, value } = await reader.read()
-    if (done) break
-
-    buffer += decoder.decode(value, { stream: true })
-    const frames = buffer.split('\n\n')
-    buffer = frames.pop() || ''
-
-    for (const frame of frames) {
-      dispatchSseFrame(frame, handlers)
-    }
+  if (signal?.aborted) {
+    abortReader()
+    return
   }
+  signal?.addEventListener('abort', abortReader, { once: true })
 
-  if (buffer.trim()) {
-    dispatchSseFrame(buffer, handlers)
+  try {
+    while (true) {
+      const { done, value } = await reader.read()
+      if (done) break
+
+      buffer += decoder.decode(value, { stream: true })
+      const frames = buffer.split('\n\n')
+      buffer = frames.pop() || ''
+
+      for (const frame of frames) {
+        dispatchSseFrame(frame, handlers)
+      }
+    }
+
+    if (buffer.trim()) {
+      dispatchSseFrame(buffer, handlers)
+    }
+  } finally {
+    signal?.removeEventListener('abort', abortReader)
+    reader.releaseLock()
   }
 }
 
